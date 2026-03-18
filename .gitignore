@@ -208,3 +208,5 @@ __marimo__/
 migrations
 
 .idea/
+config.py
+data/

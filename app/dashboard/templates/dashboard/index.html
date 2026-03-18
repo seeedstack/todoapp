@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --high: #ef4444;
+    --high-bg: rgba(239,68,68,.12);
+    --med: #f59e0b;
+    --med-bg: rgba(245,158,11,.12);
+    --low: #22c55e;
+    --low-bg: rgba(34,197,94,.12);
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --completed: #334155;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── Layout ── */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 18px; font-weight: 600; letter-spacing: -.3px; }
+  .stats { display: flex; gap: 16px; }
+  .stat { text-align: center; }
+  .stat .n { font-size: 20px; font-weight: 700; }
+  .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  main { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr; gap: 0; height: calc(100vh - 57px); }
+
+  /* ── Task list ── */
+  .task-panel { grid-row: 1 / 3; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .panel-header h2 { font-size: 14px; font-weight: 600; flex: 1; }
+  .filters { display: flex; gap: 6px; }
+  .filter-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all .15s; }
+  .filter-btn.active, .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .task-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s; position: relative; }
+  .task-card:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.08); }
+  .task-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+  .task-card.completed { opacity: .6; }
+  .task-card.completed .task-title { text-decoration: line-through; color: var(--muted); }
+
+  .task-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .task-title { font-weight: 500; flex: 1; line-height: 1.4; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  .badge-high { background: var(--high-bg); color: var(--high); }
+  .badge-medium { background: var(--med-bg); color: var(--med); }
+  .badge-low { background: var(--low-bg); color: var(--low); }
+  .badge-completed { background: rgba(100,116,139,.15); color: var(--muted); }
+  .badge-error { background: rgba(239,68,68,.15); color: var(--high); }
+  .badge-pending { background: rgba(99,102,241,.12); color: #818cf8; }
+
+  .task-desc { color: var(--muted); font-size: 12px; line-height: 1.5; margin-bottom: 8px; }
+  .task-meta { display: flex; align-items: center; justify-content: space-between; }
+  .task-date { font-size: 11px; color: var(--muted); }
+  .task-actions { display: flex; gap: 6px; opacity: 0; transition: opacity .15s; }
+  .task-card:hover .task-actions { opacity: 1; }
+  .icon-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 3px 6px; border-radius: 5px; font-size: 13px; transition: background .15s, color .15s; }
+  .icon-btn:hover { background: rgba(255,255,255,.06); color: var(--text); }
+  .icon-btn.del:hover { color: var(--high); }
+
+  .task-result { margin-top: 8px; padding: 8px 10px; background: rgba(34,197,94,.06); border: 1px solid rgba(34,197,94,.2); border-radius: 6px; font-size: 12px; color: #86efac; line-height: 1.5; }
+
+  /* ── Right panel: Form ── */
+  .form-panel { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .form-panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+
+  .field { margin-bottom: 12px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  input[type=text], textarea, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 10px; border-radius: 7px; font-size: 13px; outline: none;
+    transition: border-color .15s;
+  }
+  input[type=text]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 72px; font-family: inherit; }
+  select option { background: var(--surface); }
+
+  .form-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { border: none; border-radius: 7px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .btn-primary { background: var(--accent); color: #fff; flex: 1; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { background: rgba(255,255,255,.04); color: var(--text); }
+
+  /* ── Log panel ── */
+  .log-panel { padding: 16px 20px; display: flex; flex-direction: column; overflow: hidden; }
+  .log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .log-header h2 { font-size: 14px; font-weight: 600; }
+  .log-scroll { flex: 1; overflow-y: auto; font-family: 'Menlo', 'Consolas', monospace; font-size: 11px; line-height: 1.6; color: var(--muted); }
+  .log-line { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+  .log-line .ts { color: #334155; }
+  .log-line.created .msg { color: #818cf8; }
+  .log-line.completed .msg { color: #4ade80; }
+  .log-line.deleted .msg { color: var(--high); }
+  .log-line.error .msg { color: var(--high); }
+  .log-line.processing .msg { color: var(--med); }
+
+  /* ── Empty state ── */
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--muted); gap: 8px; padding: 40px; text-align: center; }
+  .empty svg { opacity: .3; }
+
+  /* ── Scrollbars ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Task Dashboard</h1>
+  <div class="stats">
+    <div class="stat"><div class="n" id="stat-pending">—</div><div class="l">Pending</div></div>
+    <div class="stat"><div class="n" id="stat-completed">—</div><div class="l">Done</div></div>
+    <div class="stat"><div class="n" id="stat-total">—</div><div class="l">Total</div></div>
+  </div>
+</header>
+
+<main>
+  <!-- Left: Task list -->
+  <section class="task-panel">
+    <div class="panel-header">
+      <h2>Tasks</h2>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="pending">Pending</button>
+        <button class="filter-btn" data-filter="completed">Done</button>
+        <button class="filter-btn" data-filter="high">High</button>
+      </div>
+    </div>
+    <div class="task-list" id="task-list"></div>
+  </section>
+
+  <!-- Right top: Form -->
+  <section class="form-panel">
+    <h2 id="form-title">Add Task</h2>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="f-title" placeholder="What needs to be done?" />
+    </div>
+    <div class="field">
+      <label>Description <span style="color:var(--muted)">(optional)</span></label>
+      <textarea id="f-desc" placeholder="Add context or details…"></textarea>
+    </div>
+    <div class="field">
+      <label>Priority</label>
+      <select id="f-priority">
+        <option value="high">High</option>
+        <option value="medium" selected>Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-save">Add Task</button>
+      <button class="btn btn-ghost" id="btn-cancel" style="display:none">Cancel</button>
+    </div>
+  </section>
+
+  <!-- Right bottom: Logs -->
+  <section class="log-panel">
+    <div class="log-header">
+      <h2>Activity Log</h2>
+      <button class="icon-btn" id="btn-refresh-log" title="Refresh">&#x21BA;</button>
+    </div>
+    <div class="log-scroll" id="log-scroll"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const API_BASE = '/dashboard/api';
+
+let tasks = [];
+let editingId = null;
+let activeFilter = 'all';
+
+// ---------------------------------------------------------------------------
+// API
+// ---------------------------------------------------------------------------
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API_BASE + path, opts);
+  if (r.status === 204) return null;
+  return r.json();
+}
+
+// ---------------------------------------------------------------------------
+// Render helpers
+// ---------------------------------------------------------------------------
+function priorityBadge(p) {
+  return `<span class="badge badge-${p}">${p}</span>`;
+}
+
+function statusBadge(s) {
+  const labels = { pending: 'Pending', completed: 'Done', error: 'Error' };
+  return `<span class="badge badge-${s}">${labels[s] || s}</span>`;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderTasks() {
+  const list = $('task-list');
+  let filtered = tasks;
+
+  if (activeFilter === 'pending') filtered = tasks.filter(t => t.status === 'pending');
+  else if (activeFilter === 'completed') filtered = tasks.filter(t => t.status === 'completed');
+  else if (activeFilter === 'high') filtered = tasks.filter(t => t.priority === 'high');
+
+  const prio = { high: 0, medium: 1, low: 2 };
+  filtered = [...filtered].sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
+    return (prio[a.priority] ?? 9) - (prio[b.priority] ?? 9);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l2 2 4-4"/>
+      </svg>
+      <span>No tasks here</span>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => {
+    const resultHtml = t.result
+      ? `<div class="task-result">${escHtml(t.result)}</div>` : '';
+    const descHtml = t.description
+      ? `<div class="task-desc">${escHtml(t.description)}</div>` : '';
+    const dateLabel = t.status === 'completed' && t.completed_at
+      ? `Completed ${fmtDate(t.completed_at)}`
+      : `Added ${fmtDate(t.created_at)}`;
+    return `
+    <div class="task-card ${t.status === 'completed' ? 'completed' : ''} ${editingId === t.id ? 'selected' : ''}"
+         data-id="${t.id}">
+      <div class="task-top">
+        <span class="task-title">${escHtml(t.title)}</span>
+        ${priorityBadge(t.priority)}
+        ${statusBadge(t.status)}
+      </div>
+      ${descHtml}
+      ${resultHtml}
+      <div class="task-meta">
+        <span class="task-date">${dateLabel}</span>
+        <div class="task-actions">
+          <button class="icon-btn" title="Edit" onclick="startEdit('${t.id}')">&#x270E;</button>
+          <button class="icon-btn del" title="Delete" onclick="deleteTask('${t.id}')">&#x2715;</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  $('stat-pending').textContent = tasks.filter(t => t.status === 'pending').length;
+  $('stat-completed').textContent = tasks.filter(t => t.status === 'completed').length;
+  $('stat-total').textContent = tasks.length;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---------------------------------------------------------------------------
+// Task actions
+// ---------------------------------------------------------------------------
+async function loadTasks() {
+  tasks = await api('GET', '/tasks');
+  renderTasks();
+}
+
+function startEdit(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  editingId = id;
+  $('form-title').textContent = 'Edit Task';
+  $('f-title').value = task.title;
+  $('f-desc').value = task.description || '';
+  $('f-priority').value = task.priority;
+  $('btn-save').textContent = 'Save Changes';
+  $('btn-cancel').style.display = '';
+  $('f-title').focus();
+  renderTasks();
+}
+
+function cancelEdit() {
+  editingId = null;
+  $('form-title').textContent = 'Add Task';
+  $('f-title').value = '';
+  $('f-desc').value = '';
+  $('f-priority').value = 'medium';
+  $('btn-save').textContent = 'Add Task';
+  $('btn-cancel').style.display = 'none';
+  renderTasks();
+}
+
+async function saveTask() {
+  const title = $('f-title').value.trim();
+  if (!title) { $('f-title').focus(); return; }
+  const payload = {
+    title,
+    description: $('f-desc').value.trim(),
+    priority: $('f-priority').value,
+  };
+  if (editingId) {
+    const updated = await api('PUT', `/tasks/${editingId}`, payload);
+    tasks = tasks.map(t => t.id === editingId ? updated : t);
+    cancelEdit();
+  } else {
+    const created = await api('POST', '/tasks', payload);
+    tasks.unshift(created);
+    $('f-title').value = '';
+    $('f-desc').value = '';
+    $('f-priority').value = 'medium';
+  }
+  renderTasks();
+  loadLogs();
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await api('DELETE', `/tasks/${id}`);
+  tasks = tasks.filter(t => t.id !== id);
+  if (editingId === id) cancelEdit();
+  renderTasks();
+  loadLogs();
+}
+
+// ---------------------------------------------------------------------------
+// Logs
+// ---------------------------------------------------------------------------
+async function loadLogs() {
+  const lines = await api('GET', '/logs');
+  const scroll = $('log-scroll');
+  if (!lines.length) {
+    scroll.innerHTML = '<div style="color:var(--muted);padding:8px 0">No activity yet.</div>';
+    return;
+  }
+  scroll.innerHTML = lines.map(line => {
+    let cls = '';
+    const upper = line.toUpperCase();
+    if (upper.includes('CREATED')) cls = 'created';
+    else if (upper.includes('COMPLETED') || upper.includes('COMPLETE')) cls = 'completed';
+    else if (upper.includes('DELETED')) cls = 'deleted';
+    else if (upper.includes('ERROR')) cls = 'error';
+    else if (upper.includes('PROCESSING')) cls = 'processing';
+    const match = line.match(/^(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\])\s(.*)$/);
+    if (match) {
+      return `<div class="log-line ${cls}"><span class="ts">${match[1]}</span> <span class="msg">${escHtml(match[2])}</span></div>`;
+    }
+    return `<div class="log-line ${cls}"><span class="msg">${escHtml(line)}</span></div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Event wiring
+// ---------------------------------------------------------------------------
+$('btn-save').addEventListener('click', saveTask);
+$('btn-cancel').addEventListener('click', cancelEdit);
+$('btn-refresh-log').addEventListener('click', loadLogs);
+
+$('f-title').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveTask();
+  if (e.key === 'Escape') cancelEdit();
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderTasks();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Init + auto-refresh
+// ---------------------------------------------------------------------------
+loadTasks();
+loadLogs();
+setInterval(() => { loadTasks(); loadLogs(); }, 30_000);
+</script>
+</body>
+</html>
