@@ -1,6 +1,5 @@
 import os
 import uuid
-import click
 from datetime import datetime, timezone
 from flask import jsonify, render_template, request
 from flask_jwt_extended import jwt_required
