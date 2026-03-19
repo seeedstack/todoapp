@@ -11,11 +11,18 @@ migrate = Migrate()
 jwt = JWTManager()
 
 
-def create_app():
+def create_app(config=None):
     app = Flask(__name__)
     app.config.from_object(Config)
+    if config:
+        app.config.from_object(config)
 
     db.init_app(app)
+
+    with app.app_context():
+        from app.auth.models import User                    # noqa: F401
+        from app.dashboard.models import Task, TaskLog      # noqa: F401
+
     migrate.init_app(app, db)
     jwt.init_app(app)
 
@@ -23,7 +30,10 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
     from app.dashboard import bp as dashboard_bp
-    app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
+    app.register_blueprint(dashboard_bp, url_prefix='/')
+
+    from app.admin import bp as admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
     @app.cli.command('seed-admin')
     def seed_admin():
