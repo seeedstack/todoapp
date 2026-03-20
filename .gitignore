@@ -205,6 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-migrations
 
 .idea/
+config.py
+data/
+docs/
+scripts
+.vercel
+
+.DS_Store
