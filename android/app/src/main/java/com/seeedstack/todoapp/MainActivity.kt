@@ -90,7 +90,9 @@ fun MainScaffold(isAdmin: Boolean, onLogout: () -> Unit) {
         }
     ) { padding ->
         NavHost(navController, startDestination = "tasks", modifier = Modifier.padding(padding)) {
-            composable("tasks")  { Surface { Text("Tasks placeholder") } }
+            composable("tasks") {
+                com.seeedstack.todoapp.ui.tasks.TaskListScreen(onLogout = onLogout)
+            }
             composable("logs")   { Surface { Text("Logs placeholder") } }
             if (isAdmin) composable("admin") { Surface { Text("Admin placeholder") } }
         }
