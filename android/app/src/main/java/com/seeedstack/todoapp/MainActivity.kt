@@ -96,7 +96,9 @@ fun MainScaffold(isAdmin: Boolean, onLogout: () -> Unit) {
             composable("logs") {
                 com.seeedstack.todoapp.ui.logs.LogScreen(onLogout = onLogout)
             }
-            if (isAdmin) composable("admin") { Surface { Text("Admin placeholder") } }
+            if (isAdmin) composable("admin") {
+                com.seeedstack.todoapp.ui.admin.AdminScreen(onLogout = onLogout)
+            }
         }
     }
 }
