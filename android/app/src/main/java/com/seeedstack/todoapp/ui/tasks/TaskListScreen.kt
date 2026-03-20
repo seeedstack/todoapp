@@ -25,6 +25,7 @@ import com.seeedstack.todoapp.data.api.models.TaskDto
 import com.seeedstack.todoapp.ui.components.*
 import com.seeedstack.todoapp.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
     onLogout: () -> Unit,
@@ -45,30 +46,34 @@ fun TaskListScreen(
         containerColor = BgColor
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            // Stats bar
-            Row(
+            // Stats + filters — unified header
+            Column(
                 Modifier
                     .fillMaxWidth()
                     .background(SurfaceColor)
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(bottom = 4.dp)
             ) {
-                StatItem("Pending", state.tasks.count { it.status == "pending" })
-                StatItem("Done", state.tasks.count { it.status == "completed" })
-                StatItem("Total", state.tasks.size)
-            }
-
-            // Filter chips
-            Row(
-                Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TaskFilter.entries.forEach { f ->
-                    FilterChip(
-                        selected = state.filter == f,
-                        onClick = { viewModel.setFilter(f) },
-                        label = { Text(f.name.lowercase().replaceFirstChar { it.uppercase() }) }
-                    )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem("Pending", state.tasks.count { it.status == "pending" })
+                    StatItem("Done", state.tasks.count { it.status == "completed" })
+                    StatItem("Total", state.tasks.size)
+                }
+                Row(
+                    Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TaskFilter.entries.forEach { f ->
+                        FilterChip(
+                            selected = state.filter == f,
+                            onClick = { viewModel.setFilter(f) },
+                            label = { Text(f.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                        )
+                    }
                 }
             }
 
@@ -213,7 +218,8 @@ fun TopBar(title: String, onLogout: () -> Unit) {
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = SurfaceColor,
             titleContentColor = TextColor
-        )
+        ),
+        windowInsets = WindowInsets(0)
     )
 }
 

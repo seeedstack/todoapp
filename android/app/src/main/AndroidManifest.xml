@@ -6,7 +6,9 @@
     <application
         android:name=".TodoApp"
         android:allowBackup="true"
-        android:label="Task Dashboard"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="ToDo"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
         android:usesCleartextTraffic="true">
 

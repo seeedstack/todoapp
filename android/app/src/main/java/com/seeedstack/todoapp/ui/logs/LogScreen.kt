@@ -20,6 +20,7 @@ import com.seeedstack.todoapp.ui.components.ErrorSnackbar
 import com.seeedstack.todoapp.ui.components.LoadingOverlay
 import com.seeedstack.todoapp.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen(onLogout: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
