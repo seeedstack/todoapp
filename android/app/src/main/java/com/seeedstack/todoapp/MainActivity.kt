@@ -32,8 +32,13 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController, startDestination = startDest) {
                     composable("login") {
-                        // Placeholder — replaced in Task 7
-                        Surface { Text("Login Screen") }
+                        com.seeedstack.todoapp.ui.login.LoginScreen(
+                            onLoginSuccess = {
+                                navController.navigate("main") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            }
+                        )
                     }
                     composable("main") {
                         MainScaffold(
