@@ -13,9 +13,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Refresh
 import com.seeedstack.todoapp.ui.components.ErrorSnackbar
 import com.seeedstack.todoapp.ui.components.LoadingOverlay
-import com.seeedstack.todoapp.ui.tasks.TopBar
 import com.seeedstack.todoapp.ui.theme.*
 
 @Composable
@@ -24,7 +26,29 @@ fun LogScreen(onLogout: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
 
     Scaffold(
         topBar = {
-            TopBar("Activity Log", onLogout = onLogout)
+            androidx.compose.material3.TopAppBar(
+                title = { Text("Activity Log", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
+                actions = {
+                    androidx.compose.material3.IconButton(onClick = viewModel::loadLogs) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Default.Refresh,
+                            "Refresh",
+                            tint = MutedColor
+                        )
+                    }
+                    androidx.compose.material3.IconButton(onClick = onLogout) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Default.Logout,
+                            "Sign out",
+                            tint = MutedColor
+                        )
+                    }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = SurfaceColor,
+                    titleContentColor = TextColor
+                )
+            )
         },
         containerColor = BgColor
     ) { padding ->

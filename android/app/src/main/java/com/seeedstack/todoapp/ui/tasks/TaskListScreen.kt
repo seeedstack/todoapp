@@ -79,16 +79,22 @@ fun TaskListScreen(
                     Text("No tasks here", color = MutedColor)
                 }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+                    isRefreshing = state.isLoading,
+                    onRefresh = viewModel::loadTasks
                 ) {
-                    items(state.filtered, key = { it.id }) { task ->
-                        TaskCard(
-                            task = task,
-                            onEdit = { viewModel.showEdit(task) },
-                            onDelete = { viewModel.deleteTask(task.id) }
-                        )
+                    LazyColumn(
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.filtered, key = { it.id }) { task ->
+                            TaskCard(
+                                task = task,
+                                onEdit = { viewModel.showEdit(task) },
+                                onDelete = { viewModel.deleteTask(task.id) }
+                            )
+                        }
                     }
                 }
             }
