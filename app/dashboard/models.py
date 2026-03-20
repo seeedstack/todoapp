@@ -16,6 +16,7 @@ class Task(db.Model):
     completed_at = db.Column(db.DateTime, nullable=True)
     result = db.Column(db.Text, nullable=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_by = db.Column(db.String(80), nullable=True)
 
     def to_dict(self):
         return {

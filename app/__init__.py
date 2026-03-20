@@ -19,9 +19,8 @@ def create_app(config=None):
 
     db.init_app(app)
 
-    with app.app_context():
-        from app.auth.models import User                    # noqa: F401
-        from app.dashboard.models import Task, TaskLog      # noqa: F401
+    from app.auth.models import User                    # noqa: F401
+    from app.dashboard.models import Task, TaskLog      # noqa: F401
 
     migrate.init_app(app, db)
     jwt.init_app(app)
