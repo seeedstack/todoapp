@@ -11,6 +11,7 @@ class User(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="user")
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     deleted_at = db.Column(db.DateTime, nullable=True)
     deleted_by = db.Column(db.String(80), nullable=True)
@@ -21,9 +22,14 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def is_admin(self):
+        return self.role == "admin"
+
     def to_dict(self):
         return {
             'id': str(self.id),
             'username': self.username,
+            'role': self.role,
             'created_at': self.created_at.isoformat(),
         }

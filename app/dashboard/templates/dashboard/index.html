@@ -126,6 +126,10 @@
     <div class="stat"><div class="n" id="stat-completed">—</div><div class="l">Done</div></div>
     <div class="stat"><div class="n" id="stat-total">—</div><div class="l">Total</div></div>
   </div>
+  <div style="display:flex;gap:8px;margin-left:16px;">
+    <a href="/admin/" id="admin-link" style="display:none;font-size:13px;padding:5px 12px;border:1px solid var(--border);border-radius:7px;color:var(--muted);text-decoration:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Admin</a>
+    <button class="icon-btn" id="btn-logout" title="Sign out" style="font-size:13px;padding:5px 12px;border:1px solid var(--border);border-radius:7px;">Sign out</button>
+  </div>
 </header>
 
 <main>
@@ -180,19 +184,48 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const API_BASE = '/dashboard/api';
+const API_BASE = '/api';
 
 let tasks = [];
 let editingId = null;
 let activeFilter = 'all';
 
 // ---------------------------------------------------------------------------
+// Auth guard
+// ---------------------------------------------------------------------------
+const token = sessionStorage.getItem('access_token');
+if (!token) window.location.href = '/login';
+
+function parseJwt(t) {
+  try { return JSON.parse(atob(t.split('.')[1])); } catch { return {}; }
+}
+
+const payload = parseJwt(token);
+if (payload.role === 'admin') {
+  $('admin-link').style.display = '';
+}
+
+function logout() {
+  sessionStorage.removeItem('access_token');
+  window.location.href = '/login';
+}
+
+$('btn-logout').addEventListener('click', logout);
+
+// ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
 async function api(method, path, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+    },
+  };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(API_BASE + path, opts);
+  if (r.status === 401 || r.status === 422) { logout(); return null; }
   if (r.status === 204) return null;
   return r.json();
 }

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Users</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --high: #ef4444;
+    --high-bg: rgba(239,68,68,.12);
+    --green: #22c55e;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .nav-link { color: var(--muted); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); transition: color .15s, border-color .15s; }
+  .nav-link:hover { color: var(--text); border-color: var(--accent); }
+
+  .page { max-width: 860px; margin: 40px auto; padding: 0 24px; }
+
+  /* ── Form card ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+  .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 10px; border-radius: 7px; font-size: 13px; outline: none; transition: border-color .15s;
+  }
+  input:focus { border-color: var(--accent); }
+
+  .btn { border: none; border-radius: 7px; padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .15s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { background: rgba(255,255,255,.04); color: var(--text); }
+  .btn-danger { background: var(--high-bg); color: var(--high); border: 1px solid rgba(239,68,68,.2); }
+  .btn-danger:hover { background: rgba(239,68,68,.2); }
+
+  .inline-error { font-size: 12px; color: var(--high); margin-top: 8px; min-height: 16px; }
+
+  /* ── Table ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .table-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-header h2 { font-size: 15px; font-weight: 600; }
+  .user-count { font-size: 12px; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 20px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  td { padding: 13px 20px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.015); }
+
+  .username-cell { font-weight: 500; }
+  .date-cell { font-size: 12px; color: var(--muted); }
+  .actions-cell { display: flex; gap: 6px; justify-content: flex-end; }
+
+  /* ── Edit row ── */
+  .edit-row td { background: rgba(99,102,241,.04); border-bottom: 1px solid var(--accent) !important; }
+  .edit-inputs { display: flex; gap: 8px; align-items: center; }
+  .edit-inputs input { width: 160px; }
+
+  /* ── Empty ── */
+  .empty-row td { text-align: center; color: var(--muted); padding: 40px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px; font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    transform: translateY(80px); opacity: 0;
+    transition: transform .25s, opacity .25s;
+    pointer-events: none; z-index: 99;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(34,197,94,.3); color: var(--green); }
+  .toast.error { border-color: rgba(239,68,68,.3); color: var(--high); }
+
+  /* ── Scrollbars ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Admin &mdash; Users</h1>
+  <div class="header-right">
+    <a href="/" class="nav-link">Dashboard</a>
+    <button class="btn btn-ghost" id="btn-logout" style="font-size:13px;">Sign out</button>
+  </div>
+</header>
+
+<div class="page">
+  <!-- Add user form -->
+  <div class="card">
+    <h2>Add User</h2>
+    <div class="form-row">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="new-username" placeholder="username" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="new-password" placeholder="password" />
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <select id="new-role" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;outline:none;">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btn-add">Add User</button>
+    </div>
+    <div class="inline-error" id="add-error"></div>
+  </div>
+
+  <!-- Users table -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <h2>Users</h2>
+      <span class="user-count" id="user-count"></span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Created</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="user-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const API = '/admin/api/users';
+
+// ---------------------------------------------------------------------------
+// Auth guard + decode current user id from JWT payload
+// ---------------------------------------------------------------------------
+const token = sessionStorage.getItem('access_token');
+if (!token) window.location.href = '/login';
+
+function parseJwt(t) {
+  try { return JSON.parse(atob(t.split('.')[1])); } catch { return {}; }
+}
+const payload = parseJwt(token);
+if (payload.role !== 'admin') window.location.href = '/';
+const currentUserId = payload.sub;
+
+function logout() {
+  sessionStorage.removeItem('access_token');
+  window.location.href = '/login';
+}
+$('btn-logout').addEventListener('click', logout);
+
+// ---------------------------------------------------------------------------
+// API helper
+// ---------------------------------------------------------------------------
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  if (r.status === 401 || r.status === 422) { logout(); return null; }
+  if (r.status === 204) return null;
+  return { ok: r.ok, status: r.status, data: await r.json() };
+}
+
+// ---------------------------------------------------------------------------
+// Toast
+// ---------------------------------------------------------------------------
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+let users = [];
+let editingId = null;
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function roleBadge(role) {
+  return role === 'admin'
+    ? `<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:rgba(99,102,241,.15);color:#818cf8;text-transform:uppercase;letter-spacing:.05em;">Admin</span>`
+    : `<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:rgba(100,116,139,.12);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">User</span>`;
+}
+
+function renderUsers() {
+  const tbody = $('user-tbody');
+  $('user-count').textContent = `${users.length} user${users.length !== 1 ? 's' : ''}`;
+
+  if (!users.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No users yet</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const isSelf = u.id === currentUserId;
+    if (editingId === u.id) {
+      return `
+      <tr class="edit-row" data-id="${u.id}">
+        <td>
+          <div class="edit-inputs">
+            <input type="text" id="edit-username" value="${escHtml(u.username)}" placeholder="Username" />
+            <input type="password" id="edit-password" placeholder="New password (leave blank to keep)" />
+          </div>
+        </td>
+        <td>
+          <select id="edit-role" ${isSelf ? 'disabled title="Cannot change your own role"' : ''} style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:12px;outline:none;">
+            <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+          </select>
+        </td>
+        <td class="date-cell">${fmtDate(u.created_at)}</td>
+        <td class="actions-cell">
+          <button class="btn btn-primary" onclick="saveEdit('${u.id}')">Save</button>
+          <button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button>
+        </td>
+      </tr>`;
+    }
+    return `
+    <tr data-id="${u.id}">
+      <td class="username-cell">${escHtml(u.username)}${isSelf ? ' <span style="font-size:11px;color:var(--muted)">(you)</span>' : ''}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td class="date-cell">${fmtDate(u.created_at)}</td>
+      <td class="actions-cell">
+        <button class="btn btn-ghost" onclick="startEdit('${u.id}')">Edit</button>
+        <button class="btn btn-danger" onclick="deleteUser('${u.id}', '${escHtml(u.username)}')" ${isSelf ? 'disabled title="Cannot delete your own account"' : ''}>Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (editingId) {
+    const unameInput = $('edit-username');
+    if (unameInput) { unameInput.focus(); unameInput.select(); }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Load
+// ---------------------------------------------------------------------------
+async function loadUsers() {
+  const res = await api('GET', API);
+  if (!res) return;
+  users = res.data;
+  renderUsers();
+}
+
+// ---------------------------------------------------------------------------
+// Add user
+// ---------------------------------------------------------------------------
+$('btn-add').addEventListener('click', addUser);
+[$('new-username'), $('new-password')].forEach(el =>
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') addUser(); })
+);
+
+async function addUser() {
+  const username = $('new-username').value.trim();
+  const password = $('new-password').value;
+  const role = $('new-role').value;
+  $('add-error').textContent = '';
+
+  if (!username || !password) {
+    $('add-error').textContent = 'Username and password are required.';
+    return;
+  }
+
+  const res = await api('POST', API, { username, password, role });
+  if (!res) return;
+  if (!res.ok) {
+    $('add-error').textContent = res.data.error || 'Failed to create user.';
+    return;
+  }
+
+  $('new-username').value = '';
+  $('new-password').value = '';
+  $('new-role').value = 'user';
+  users.push(res.data);
+  renderUsers();
+  showToast(`User "${res.data.username}" created`);
+}
+
+// ---------------------------------------------------------------------------
+// Edit user
+// ---------------------------------------------------------------------------
+function startEdit(id) {
+  editingId = id;
+  renderUsers();
+}
+
+function cancelEdit() {
+  editingId = null;
+  renderUsers();
+}
+
+async function saveEdit(id) {
+  const username = $('edit-username').value.trim();
+  const password = $('edit-password').value;
+
+  if (!username) return;
+
+  const roleEl = $('edit-role');
+  const body = { username };
+  if (password) body.password = password;
+  if (roleEl && !roleEl.disabled) body.role = roleEl.value;
+
+  const res = await api('PUT', `${API}/${id}`, body);
+  if (!res) return;
+  if (!res.ok) {
+    showToast(res.data.error || 'Update failed', 'error');
+    return;
+  }
+
+  users = users.map(u => u.id === id ? res.data : u);
+  editingId = null;
+  renderUsers();
+  showToast(`User "${res.data.username}" updated`);
+}
+
+// ---------------------------------------------------------------------------
+// Delete user
+// ---------------------------------------------------------------------------
+async function deleteUser(id, username) {
+  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+  const res = await api('DELETE', `${API}/${id}`);
+  if (res !== null && res && !res.ok) {
+    showToast(res.data?.error || 'Delete failed', 'error');
+    return;
+  }
+  users = users.filter(u => u.id !== id);
+  if (editingId === id) editingId = null;
+  renderUsers();
+  showToast(`User "${username}" deleted`);
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+loadUsers();
+</script>
+</body>
+</html>
